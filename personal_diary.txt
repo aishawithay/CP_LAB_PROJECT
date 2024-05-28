@@ -1,0 +1,269 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <conio.h>
+#include <cstdlib> // For system("cls") to clear the screen
+
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS // Disable localtime_s() warnings on Windows
+#endif
+
+using namespace std;
+
+// Function prototypes
+void login();
+void displayMenu();
+void enterEntry();
+void searchEntry();
+void displayEntry();
+void editEntry();
+void deleteEntry();
+
+int main() {
+    login();
+    displayMenu();
+    return 0;
+}
+
+void login() {
+    string password;
+    cout << "Enter password: ";
+    char c;
+    while ((c = _getch()) != '\r') {
+        if (c == '\b') {
+            if (password.size() > 0) {
+                cout << "\b \b";
+                password.pop_back();
+            }
+        }
+        else {
+            cout << "*";
+            password.push_back(c);
+        }
+    }
+    cout << endl;
+    // Validate password (for simplicity, hardcoded password)
+    if (password != "password") {
+        cout << "Incorrect password. Exiting." << endl;
+        exit(1);
+    }
+}
+
+void displayMenu() {
+    char choice;
+    do {
+        system("cls"); // Clear the screen
+        cout << "\nDiary Menu:\n";
+        cout << "1. Enter Entry\n";
+        cout << "2. Search Entry\n";
+        cout << "3. Display All Entries\n";
+        cout << "4. Edit Entry\n";
+        cout << "5. Delete Entry\n";
+        cout << "6. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case '1':
+            enterEntry();
+            break;
+        case '2':
+            searchEntry();
+            break;
+        case '3':
+            displayEntry();
+            break;
+        case '4':
+            editEntry();
+            break;
+        case '5':
+            deleteEntry();
+            break;
+        case '6':
+            cout << "Exiting...\n";
+            break;
+        default:
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != '6');
+}
+
+void enterEntry() {
+    string entry, date;
+
+    cout << "Enter the date (YYYY-MM-DD): ";
+    cin >> date;
+
+    cout << "Enter your diary entry:\n";
+    cin.ignore(); // Clear the input buffer
+    getline(cin, entry);
+
+    ofstream diaryFile("diary.txt", ios::app); // Open file in append mode
+    if (!diaryFile.is_open()) {
+        cout << "Error opening file!\n";
+        return;
+    }
+    diaryFile << "[" << date << "] " << entry << endl;
+    diaryFile.close();
+    cout << "Entry added successfully.\n";
+    system("pause");
+}
+
+void searchEntry() {
+    char choice;
+    cout << "Search by:\n";
+    cout << "1. Date\n";
+    cout << "2. Keyword\n";
+    cout << "Enter your choice: ";
+    cin >> choice;
+
+    if (choice == '1') {
+        string date;
+        cout << "Enter date to search (YYYY-MM-DD): ";
+        cin >> date;
+
+        ifstream diaryFile("diary.txt");
+        if (!diaryFile.is_open()) {
+            cout << "Error opening file!\n";
+            return;
+        }
+        cout << "Search results for date " << date << ":\n";
+        string line;
+        while (getline(diaryFile, line)) {
+            if (line.find("[" + date + "]") != string::npos) {
+                cout << line << endl;
+            }
+        }
+        diaryFile.close();
+    }
+    else if (choice == '2') {
+        string keyword, line;
+        cout << "Enter keyword to search: ";
+        cin >> keyword;
+
+        ifstream diaryFile("diary.txt");
+        if (!diaryFile.is_open()) {
+            cout << "Error opening file!\n";
+            return;
+        }
+        cout << "Search results for keyword '" << keyword << "':\n";
+        while (getline(diaryFile, line)) {
+            if (line.find(keyword) != string::npos) {
+                cout << line << endl;
+            }
+        }
+        diaryFile.close();
+    }
+    else {
+        cout << "Invalid choice.\n";
+    }
+    system("pause");
+}
+
+void displayEntry() {
+    system("cls"); // Clear the screen
+    string line;
+    ifstream diaryFile("diary.txt");
+    if (!diaryFile.is_open()) {
+        cout << "Error opening file!\n";
+        return;
+    }
+    cout << "Your diary entries:\n";
+    while (getline(diaryFile, line)) {
+        cout << line << endl;
+    }
+    diaryFile.close();
+    system("pause");
+}
+
+void editEntry() {
+    string date;
+    cout << "Enter the date of the entry you want to edit (YYYY-MM-DD): ";
+    cin >> date;
+
+    ifstream diaryFile("diary.txt");
+    if (!diaryFile.is_open()) {
+        cout << "Error opening file!\n";
+        return;
+    }
+
+    ofstream tempFile("temp.txt");
+    if (!tempFile.is_open()) {
+        cout << "Error opening temp file!\n";
+        return;
+    }
+
+    string line;
+    bool found = false;
+    while (getline(diaryFile, line)) {
+        if (line.find("[" + date + "]") != string::npos) {
+            found = true;
+            cout << "Enter the new entry:\n";
+            string newEntry;
+            cin.ignore(); // Clear the input buffer
+            getline(cin, newEntry);
+            tempFile << "[" << date << "] " << newEntry << endl;
+            cout << "Entry edited successfully.\n";
+        }
+        else {
+            tempFile << line << endl;
+        }
+    }
+
+    diaryFile.close();
+    tempFile.close();
+
+    if (!found) {
+        cout << "Entry not found for the given date.\n";
+        system("pause");
+        return;
+    }
+
+    remove("diary.txt");
+    rename("temp.txt", "diary.txt");
+    system("pause");
+}
+
+void deleteEntry() {
+    string date;
+    cout << "Enter the date of the entry you want to delete (YYYY-MM-DD): ";
+    cin >> date;
+
+    ifstream diaryFile("diary.txt");
+    if (!diaryFile.is_open()) {
+        cout << "Error opening file!\n";
+        return;
+    }
+
+    ofstream tempFile("temp.txt");
+    if (!tempFile.is_open()) {
+        cout << "Error opening temp file!\n";
+        return;
+    }
+
+    string line;
+    bool found = false;
+    while (getline(diaryFile, line)) {
+        if (line.find("[" + date + "]") != string::npos) {
+            found = true;
+            cout << "Entry deleted successfully.\n";
+            // Skip writing this line to the temp file, effectively deleting it
+        }
+        else {
+            tempFile << line << endl;
+        }
+    }
+
+    diaryFile.close();
+    tempFile.close();
+
+    if (!found) {
+        cout << "Entry not found for the given date.\n";
+        system("pause");
+        return;
+    }
+
+    remove("diary.txt");
+    rename("temp.txt", "diary.txt");
+    system("pause");
+}
